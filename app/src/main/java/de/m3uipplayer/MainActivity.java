@@ -3,6 +3,7 @@ package de.m3uipplayer;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
+import android.util.Log;
 import android.widget.Button;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -128,6 +129,7 @@ public class MainActivity extends AppCompatActivity {
             player = new ExoPlayer.Builder(this).build();
             player.addListener(new Player.Listener() {
                 @Override public void onPlayerError(PlaybackException error) {
+                    Log.e("MainActivity", "Playback failed for channel: " + channel.name, error);
                     Toast.makeText(MainActivity.this, "Stream konnte nicht gestartet werden. Prüfe Verbindung und Sender-URL.", Toast.LENGTH_LONG).show();
                 }
             });
