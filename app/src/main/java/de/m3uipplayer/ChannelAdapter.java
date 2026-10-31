@@ -21,10 +21,17 @@ public class ChannelAdapter extends RecyclerView.Adapter<ChannelAdapter.Holder> 
     }
     @Override public void onBindViewHolder(@NonNull Holder h, int position) {
         Channel c = channels.get(position);
-        h.number.setText(String.format(java.util.Locale.getDefault(), "%03d", position + 1));
+        h.number.setText(formatChannelNumber(position + 1));
         h.name.setText(c.name); h.group.setText(c.group);
         h.itemView.setOnClickListener(v -> listener.onClick(c));
     }
+
+    private static String formatChannelNumber(int number) {
+        if (number < 10) return "00" + number;
+        if (number < 100) return "0" + number;
+        return Integer.toString(number);
+    }
+
     @Override public int getItemCount() { return channels.size(); }
     static class Holder extends RecyclerView.ViewHolder {
         final TextView number, name, group;
