@@ -98,7 +98,7 @@ public class MainActivity extends AppCompatActivity {
              BufferedReader reader = new BufferedReader(new InputStreamReader(input, StandardCharsets.UTF_8))) {
             String line, pendingName = null, pendingGroup = null;
             while ((line = reader.readLine()) != null) {
-                line = line.trim();
+                line = line.replace("\uFEFF", "").trim();
                 if (line.isEmpty() || line.startsWith("#EXTM3U") || line.startsWith("#EXTVLCOPT")) continue;
                 if (line.startsWith("#EXTINF")) {
                     int comma = line.indexOf(',');

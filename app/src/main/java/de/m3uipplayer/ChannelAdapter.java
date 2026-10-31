@@ -14,7 +14,10 @@ public class ChannelAdapter extends RecyclerView.Adapter<ChannelAdapter.Holder> 
     private final List<Channel> channels = new ArrayList<>();
     private final OnChannelClick listener;
 
-    public ChannelAdapter(OnChannelClick listener) { this.listener = listener; }
+    public ChannelAdapter(OnChannelClick listener) {
+        this.listener = listener;
+        setHasStableIds(true);
+    }
     public void replace(List<Channel> items) { channels.clear(); channels.addAll(items); notifyDataSetChanged(); }
     @NonNull @Override public Holder onCreateViewHolder(@NonNull ViewGroup parent, int type) {
         return new Holder(LayoutInflater.from(parent.getContext()).inflate(R.layout.item_channel, parent, false));
@@ -25,6 +28,7 @@ public class ChannelAdapter extends RecyclerView.Adapter<ChannelAdapter.Holder> 
         h.name.setText(c.name); h.group.setText(c.group);
         h.itemView.setOnClickListener(v -> listener.onClick(c));
     }
+    @Override public long getItemId(int position) { return channels.get(position).url.hashCode(); }
     @Override public int getItemCount() { return channels.size(); }
     static class Holder extends RecyclerView.ViewHolder {
         final TextView number, name, group;
