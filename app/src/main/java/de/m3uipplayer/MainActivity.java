@@ -10,6 +10,8 @@ import androidx.activity.OnBackPressedCallback;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.media3.common.MediaItem;
+import androidx.media3.common.PlaybackException;
+import androidx.media3.common.Player;
 import androidx.media3.common.util.UnstableApi;
 import androidx.media3.exoplayer.ExoPlayer;
 import androidx.media3.ui.PlayerView;
@@ -122,7 +124,14 @@ public class MainActivity extends AppCompatActivity {
         PlayerView playerView = findViewById(R.id.player_view);
         TextView title = findViewById(R.id.player_title);
         title.setText(channel.name);
-        if (player == null) player = new ExoPlayer.Builder(this).build();
+        if (player == null) {
+            player = new ExoPlayer.Builder(this).build();
+            player.addListener(new Player.Listener() {
+                @Override public void onPlayerError(PlaybackException error) {
+                    Toast.makeText(MainActivity.this, "Stream konnte nicht gestartet werden. Prüfe Verbindung und Sender-URL.", Toast.LENGTH_LONG).show();
+                }
+            });
+        }
         playerView.setPlayer(player);
         player.setMediaItem(MediaItem.fromUri(Uri.parse(channel.url)));
         player.prepare(); player.play();
