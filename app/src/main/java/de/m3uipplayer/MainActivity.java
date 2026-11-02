@@ -3,6 +3,7 @@ package de.m3uipplayer;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
+import android.os.Process;
 import android.util.Log;
 import android.widget.Button;
 import android.widget.TextView;
@@ -14,16 +15,24 @@ import androidx.media3.common.MediaItem;
 import androidx.media3.common.PlaybackException;
 import androidx.media3.common.Player;
 import androidx.media3.common.util.UnstableApi;
+import androidx.media3.datasource.HttpDataSource;
+import androidx.media3.exoplayer.DefaultLoadControl;
 import androidx.media3.exoplayer.ExoPlayer;
+import androidx.media3.exoplayer.trackselection.DefaultTrackSelector;
 import androidx.media3.ui.PlayerView;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 import java.io.BufferedReader;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.net.SocketTimeoutException;
+import java.net.UnknownHostException;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -36,6 +45,12 @@ public class MainActivity extends AppCompatActivity {
     private boolean playerVisible;
     private TextView status;
     private TextView playlistName;
+    private final ExecutorService playlistExecutor = Executors.newSingleThreadExecutor(task -> new Thread(() -> {
+        Process.setThreadPriority(Process.THREAD_PRIORITY_BACKGROUND);
+        task.run();
+    }, "playlist-parser"));
+    private Future<?> playlistTask;
+    private int playlistRequestId;
     private static final Pattern GROUP = Pattern.compile("group-title\\s*=\\s*\\\"([^\\\"]*)\\\"", Pattern.CASE_INSENSITIVE);
 
     @Override public void onCreate(@Nullable Bundle state) {
@@ -83,16 +98,19 @@ public class MainActivity extends AppCompatActivity {
 
     private void loadPlaylist(Uri uri) {
         status.setText("Playlist wird gelesen …");
-        new Thread(() -> {
+        if (playlistTask != null) playlistTask.cancel(true);
+        int requestId = ++playlistRequestId;
+        playlistTask = playlistExecutor.submit(() -> {
             List<Channel> loaded = parse(uri);
             runOnUiThread(() -> {
+                if (requestId != playlistRequestId || isFinishing() || isDestroyed()) return;
                 channels.clear(); channels.addAll(loaded); adapter.replace(channels);
                 String name = uri.getLastPathSegment() == null ? "USB-Playlist" : uri.getLastPathSegment();
                 playlistName.setText(name);
                 status.setText(loaded.isEmpty() ? "Keine gültigen Sender gefunden." : loaded.size() + " Sender geladen");
                 if (!loaded.isEmpty()) findViewById(R.id.channel_list).requestFocus();
             });
-        }).start();
+        });
     }
 
     private List<Channel> parse(Uri uri) {
@@ -126,11 +144,21 @@ public class MainActivity extends AppCompatActivity {
         TextView title = findViewById(R.id.player_title);
         title.setText(channel.name);
         if (player == null) {
-            player = new ExoPlayer.Builder(this).build();
+            DefaultTrackSelector trackSelector = new DefaultTrackSelector(this);
+            trackSelector.setParameters(trackSelector.buildUponParameters().setMaxVideoSize(1280, 720).build());
+            DefaultLoadControl loadControl = new DefaultLoadControl.Builder()
+                    .setBufferDurationsMs(15_000, 30_000, 1_500, 5_000)
+                    .setTargetBufferBytes(24 * 1024 * 1024)
+                    .setPrioritizeTimeOverSizeThresholds(false)
+                    .build();
+            player = new ExoPlayer.Builder(this)
+                    .setTrackSelector(trackSelector)
+                    .setLoadControl(loadControl)
+                    .build();
             player.addListener(new Player.Listener() {
                 @Override public void onPlayerError(PlaybackException error) {
                     Log.e("MainActivity", "Playback failed for channel: " + channel.name, error);
-                    Toast.makeText(MainActivity.this, "Stream konnte nicht gestartet werden. Prüfe Verbindung und Sender-URL.", Toast.LENGTH_LONG).show();
+                    Toast.makeText(MainActivity.this, getPlaybackErrorMessage(error), Toast.LENGTH_LONG).show();
                 }
             });
         }
@@ -139,12 +167,44 @@ public class MainActivity extends AppCompatActivity {
         player.prepare(); player.play();
     }
 
+    private String getPlaybackErrorMessage(Throwable error) {
+        for (Throwable cause = error; cause != null; cause = cause.getCause()) {
+            if (cause instanceof HttpDataSource.InvalidResponseCodeException) {
+                int statusCode = ((HttpDataSource.InvalidResponseCodeException) cause).responseCode;
+                if (statusCode == 401) return "Der Anbieter lehnt den Sender ab (HTTP 401). Bitte Zugangsdaten oder Playlist prüfen.";
+                if (statusCode == 403) return "Der Anbieter sperrt den Sender (HTTP 403). Bitte Anbieter oder Abo prüfen.";
+                if (statusCode == 404) return "Der Sender wurde beim Anbieter nicht gefunden (HTTP 404).";
+                return "Der Anbieter meldet HTTP " + statusCode + ". Bitte Sender oder Playlist prüfen.";
+            }
+            if (cause instanceof UnknownHostException) return "Kein Netzwerk oder der Stream-Server ist nicht erreichbar.";
+            if (cause instanceof SocketTimeoutException) return "Zeitüberschreitung: Der Stream-Server antwortet nicht.";
+        }
+        return "Stream konnte nicht gestartet werden. Prüfe Netzwerk und Sender-URL.";
+    }
+
     private void stopPlayer() {
-        if (player != null) { player.stop(); player.clearMediaItems(); }
+        releasePlayer();
+    }
+
+    private void releasePlayer() {
+        if (player == null) return;
+        PlayerView playerView = playerVisible ? findViewById(R.id.player_view) : null;
+        if (playerView != null) playerView.setPlayer(null);
+        player.release();
+        player = null;
+    }
+
+    @Override protected void onStop() {
+        boolean wasPlayerVisible = playerVisible;
+        releasePlayer();
+        if (wasPlayerVisible && !isChangingConfigurations()) showLibrary();
+        super.onStop();
     }
 
     @Override protected void onDestroy() {
-        if (player != null) { player.release(); player = null; }
+        if (playlistTask != null) playlistTask.cancel(true);
+        playlistExecutor.shutdownNow();
+        releasePlayer();
         super.onDestroy();
     }
 }

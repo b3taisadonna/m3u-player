@@ -5,6 +5,7 @@
     <application
         android:theme="@style/Theme.M3UPlayer"
         android:label="M3U Player"
+        android:icon="@mipmap/ic_launcher"
         android:banner="@drawable/tv_banner"
         android:usesCleartextTraffic="true"
         android:resizeableActivity="true">

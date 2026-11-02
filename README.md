@@ -11,6 +11,10 @@ Ein schlanker Android-TV-Player für lokale `.m3u`- und `.m3u8`-Playlists.
 
 Die App verwendet den Android-Dateiauswahldialog. Dadurch funktioniert sie mit USB-Sticks, ohne einen festen Mount-Pfad oder zusätzliche Speicherberechtigungen vorauszusetzen. Unterstützt werden HTTP/HTTPS-Streams, sofern das jeweilige Format von Media3 unterstützt wird.
 
+Zur Schonung des Stromverbrauchs wird die Wiedergabe beendet und der Player freigegeben, sobald die App in den Hintergrund wechselt. Beim Zurückkehren wird die Senderliste angezeigt; der Stream kann dort erneut gestartet werden.
+
+Für Geräte mit wenig Arbeitsspeicher ist die Wiedergabe auf maximal 720p und einen 24-MiB-Puffer begrenzt. Auf einem 720p-Fernseher vermeidet dies unnötige Dekodier- und Speicherlast bei höher aufgelösten Streams.
+
 ## Build
 
 ```bash
