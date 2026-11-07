@@ -1,4 +1,8 @@
-<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android" android:layout_width="match_parent" android:layout_height="match_parent" android:background="#000000">
-    <androidx.media3.ui.PlayerView android:id="@+id/player_view" android:layout_width="match_parent" android:layout_height="match_parent" android:use_controller="true" android:show_buffering="when_playing" />
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android" xmlns:app="http://schemas.android.com/apk/res-auto" android:layout_width="match_parent" android:layout_height="match_parent" android:background="#000000">
+    <androidx.media3.ui.PlayerView android:id="@+id/player_view" android:layout_width="match_parent" android:layout_height="match_parent" app:use_controller="true" app:show_buffering="when_playing" />
     <TextView android:id="@+id/player_title" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_gravity="top|start" android:layout_margin="28dp" android:textColor="#FFFFFF" android:textSize="18sp" android:textStyle="bold" />
+    <LinearLayout android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_gravity="bottom|center_horizontal" android:layout_marginBottom="36dp" android:orientation="horizontal">
+        <Button android:id="@+id/previous_channel" android:layout_width="wrap_content" android:layout_height="56dp" android:text="@string/previous_channel" android:contentDescription="@string/previous_channel" />
+        <Button android:id="@+id/next_channel" android:layout_width="wrap_content" android:layout_height="56dp" android:layout_marginStart="20dp" android:text="@string/next_channel" android:contentDescription="@string/next_channel" />
+    </LinearLayout>
 </FrameLayout>

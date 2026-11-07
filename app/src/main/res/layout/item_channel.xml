@@ -5,4 +5,5 @@
     <TextView android:id="@+id/channel_number" android:layout_width="42dp" android:layout_height="wrap_content" android:textColor="@color/accent" android:textSize="14sp" />
     <TextView android:id="@+id/channel_name" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:textColor="@color/text_primary" android:textSize="16sp" android:ellipsize="end" android:maxLines="1" />
     <TextView android:id="@+id/channel_group" android:layout_width="140dp" android:layout_height="wrap_content" android:textColor="@color/text_secondary" android:textSize="12sp" android:gravity="end" android:ellipsize="end" android:maxLines="1" />
+    <Button android:id="@+id/channel_favorite" android:layout_width="48dp" android:layout_height="48dp" android:minWidth="48dp" android:minHeight="48dp" android:padding="0dp" android:text="@string/favorite_off" android:textColor="@color/accent" android:contentDescription="@string/add_favorite_generic" />
 </LinearLayout>

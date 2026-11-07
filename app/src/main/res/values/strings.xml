@@ -1,4 +1,39 @@
 <resources>
     <string name="app_name">M3U Player</string>
     <string name="app_description">M3U-Player für Android TV</string>
+    <string name="search_channels">Sender suchen</string>
+    <string name="all_groups">Alle Gruppen</string>
+    <string name="show_favorites">Nur Favoriten</string>
+    <string name="show_all_channels">Alle Sender</string>
+    <string name="favorite_on">★</string>
+    <string name="favorite_off">☆</string>
+    <string name="add_favorite">%1$s zu Favoriten hinzufügen</string>
+    <string name="remove_favorite">%1$s aus Favoriten entfernen</string>
+    <string name="add_favorite_generic">Zu Favoriten hinzufügen</string>
+    <string name="delete_playlist">Playlist löschen</string>
+    <string name="delete_playlist_title">Gespeicherte Playlist löschen?</string>
+    <string name="delete_playlist_confirmation">Die ausgewählte Playlist wird aus der App entfernt. Andere Playlists und deine Favoriten bleiben gespeichert.</string>
+    <string name="playlist_load_failed">Playlist konnte nicht gespeichert werden.</string>
+    <string name="playlist_restoring">Gespeicherte Playlist wird geladen …</string>
+    <string name="saved_playlist">Gespeicherte Playlist</string>
+    <string name="saved_playlist_load_failed">Gespeicherte Playlist kann nicht gelesen werden.</string>
+    <string name="no_valid_channels">Keine gültigen Sender gefunden.</string>
+    <string name="channels_loaded">%1$d Sender geladen</string>
+    <string name="no_playlist">Keine Playlist gespeichert</string>
+    <string name="playlist_deleted">Playlist gelöscht.</string>
+    <string name="playlist_delete_failed">Playlist konnte nicht gelöscht werden.</string>
+    <string name="add_playlist">Playlist hinzufügen</string>
+    <string name="your_playlists">Deine Playlists</string>
+    <string name="playback_player">Videoplayer</string>
+    <string name="player_exoplayer">Integrierter Player</string>
+    <string name="player_vlc">VLC Player</string>
+    <string name="player_mx">MX Player</string>
+    <string name="external_player_unavailable">Ausgewählter Player ist nicht installiert. Bitte Videoplayer auswählen.</string>
+    <string name="previous_channel">‹ Vorheriger Sender</string>
+    <string name="next_channel">Nächster Sender ›</string>
+    <string-array name="player_modes">
+        <item>@string/player_exoplayer</item>
+        <item>@string/player_vlc</item>
+        <item>@string/player_mx</item>
+    </string-array>
 </resources>
