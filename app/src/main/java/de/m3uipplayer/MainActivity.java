@@ -3,6 +3,7 @@ package de.m3uipplayer;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
+import android.view.KeyEvent;
 import android.widget.Button;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -11,7 +12,11 @@ import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.media3.common.MediaItem;
 import androidx.media3.common.util.UnstableApi;
+import androidx.media3.datasource.DefaultDataSource;
+import androidx.media3.datasource.DefaultHttpDataSource;
+import androidx.media3.exoplayer.DefaultLoadControl;
 import androidx.media3.exoplayer.ExoPlayer;
+import androidx.media3.exoplayer.source.DefaultMediaSourceFactory;
 import androidx.media3.ui.PlayerView;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
@@ -21,6 +26,7 @@ import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -33,6 +39,11 @@ public class MainActivity extends AppCompatActivity {
     private boolean playerVisible;
     private TextView status;
     private TextView playlistName;
+    private String currentPlaylistName;
+    private String currentStatusText;
+    private int currentChannelIndex = -1;
+    private TextView playerTitle;
+    private TextView playerGroup;
     private static final Pattern GROUP = Pattern.compile("group-title\\s*=\\s*\\\"([^\\\"]*)\\\"", Pattern.CASE_INSENSITIVE);
 
     @Override public void onCreate(@Nullable Bundle state) {
@@ -58,7 +69,14 @@ public class MainActivity extends AppCompatActivity {
         Button open = findViewById(R.id.open_button);
         open.setOnClickListener(v -> pickPlaylist());
         open.requestFocus();
-        if (!channels.isEmpty()) adapter.replace(channels);
+        if (!channels.isEmpty()) {
+            adapter.replace(channels);
+            if (currentPlaylistName != null) playlistName.setText(currentPlaylistName);
+            if (currentStatusText != null) status.setText(currentStatusText);
+            if (currentChannelIndex >= 0 && currentChannelIndex < channels.size()) {
+                list.scrollToPosition(currentChannelIndex);
+            }
+        }
     }
 
     private void pickPlaylist() {
@@ -84,9 +102,10 @@ public class MainActivity extends AppCompatActivity {
             List<Channel> loaded = parse(uri);
             runOnUiThread(() -> {
                 channels.clear(); channels.addAll(loaded); adapter.replace(channels);
-                String name = uri.getLastPathSegment() == null ? "USB-Playlist" : uri.getLastPathSegment();
-                playlistName.setText(name);
-                status.setText(loaded.isEmpty() ? "Keine gültigen Sender gefunden." : loaded.size() + " Sender geladen");
+                currentPlaylistName = uri.getLastPathSegment() == null ? "USB-Playlist" : uri.getLastPathSegment();
+                playlistName.setText(currentPlaylistName);
+                currentStatusText = loaded.isEmpty() ? "Keine gültigen Sender gefunden." : loaded.size() + " Sender geladen";
+                status.setText(currentStatusText);
                 if (!loaded.isEmpty()) findViewById(R.id.channel_list).requestFocus();
             });
         }).start();
@@ -117,19 +136,139 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void playChannel(Channel channel) {
-        playerVisible = true;
-        setContentView(R.layout.player_screen);
+        int idx = channels.indexOf(channel);
+        playChannelAtIndex(idx >= 0 ? idx : 0);
+    }
+
+    private void playChannelAtIndex(int index) {
+        if (channels.isEmpty()) return;
+        if (index < 0) {
+            index = channels.size() - 1;
+        } else if (index >= channels.size()) {
+            index = 0;
+        }
+        currentChannelIndex = index;
+        Channel channel = channels.get(currentChannelIndex);
+
+        if (!playerVisible) {
+            playerVisible = true;
+            setContentView(R.layout.player_screen);
+        }
+
         PlayerView playerView = findViewById(R.id.player_view);
-        TextView title = findViewById(R.id.player_title);
-        title.setText(channel.name);
-        if (player == null) player = new ExoPlayer.Builder(this).build();
+        playerTitle = findViewById(R.id.player_title);
+        playerGroup = findViewById(R.id.player_group);
+
+        String titleText = String.format(Locale.getDefault(), "%03d  %s", currentChannelIndex + 1, channel.name);
+        if (playerTitle != null) playerTitle.setText(titleText);
+        if (playerGroup != null) playerGroup.setText(channel.group);
+
+        if (player == null) {
+            DefaultLoadControl loadControl = new DefaultLoadControl.Builder()
+                .setBufferDurationsMs(
+                    30_000,
+                    120_000,
+                    1_500,
+                    3_000
+                )
+                .setPrioritizeTimeOverSizeThresholds(true)
+                .setBackBuffer(15_000, true)
+                .build();
+
+            DefaultHttpDataSource.Factory httpFactory = new DefaultHttpDataSource.Factory()
+                .setUserAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
+                .setConnectTimeoutMs(20_000)
+                .setReadTimeoutMs(30_000)
+                .setAllowCrossProtocolRedirects(true)
+                .setKeepPostFor302Redirects(true);
+
+            DefaultDataSource.Factory dataSourceFactory = new DefaultDataSource.Factory(this, httpFactory);
+
+            player = new ExoPlayer.Builder(this)
+                .setLoadControl(loadControl)
+                .setMediaSourceFactory(new DefaultMediaSourceFactory(dataSourceFactory))
+                .build();
+        }
         playerView.setPlayer(player);
-        player.setMediaItem(MediaItem.fromUri(Uri.parse(channel.url)));
-        player.prepare(); player.play();
+
+        MediaItem mediaItem = new MediaItem.Builder()
+            .setUri(Uri.parse(channel.url))
+            .setLiveConfiguration(
+                new MediaItem.LiveConfiguration.Builder()
+                    .setTargetOffsetMs(15_000)
+                    .setMinOffsetMs(5_000)
+                    .setMaxOffsetMs(45_000)
+                    .build()
+            )
+            .build();
+
+        player.setMediaItem(mediaItem);
+        player.prepare();
+        player.play();
+    }
+
+    private void nextChannel() {
+        if (channels.isEmpty()) return;
+        playChannelAtIndex(currentChannelIndex + 1);
+    }
+
+    private void previousChannel() {
+        if (channels.isEmpty()) return;
+        playChannelAtIndex(currentChannelIndex - 1);
+    }
+
+    private void togglePlayPause() {
+        if (player != null) {
+            if (player.isPlaying()) player.pause();
+            else player.play();
+        }
+    }
+
+    @Override
+    public boolean dispatchKeyEvent(KeyEvent event) {
+        if (event.getAction() == KeyEvent.ACTION_DOWN && playerVisible) {
+            switch (event.getKeyCode()) {
+                case KeyEvent.KEYCODE_CHANNEL_UP:
+                case KeyEvent.KEYCODE_DPAD_UP:
+                case KeyEvent.KEYCODE_DPAD_RIGHT:
+                case KeyEvent.KEYCODE_MEDIA_NEXT:
+                case KeyEvent.KEYCODE_PAGE_UP:
+                    nextChannel();
+                    return true;
+
+                case KeyEvent.KEYCODE_CHANNEL_DOWN:
+                case KeyEvent.KEYCODE_DPAD_DOWN:
+                case KeyEvent.KEYCODE_DPAD_LEFT:
+                case KeyEvent.KEYCODE_MEDIA_PREVIOUS:
+                case KeyEvent.KEYCODE_PAGE_DOWN:
+                    previousChannel();
+                    return true;
+
+                case KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE:
+                    togglePlayPause();
+                    return true;
+
+                case KeyEvent.KEYCODE_MEDIA_PLAY:
+                    if (player != null && !player.isPlaying()) player.play();
+                    return true;
+
+                case KeyEvent.KEYCODE_MEDIA_PAUSE:
+                    if (player != null && player.isPlaying()) player.pause();
+                    return true;
+            }
+        }
+        return super.dispatchKeyEvent(event);
     }
 
     private void stopPlayer() {
         if (player != null) { player.stop(); player.clearMediaItems(); }
+    }
+
+    @Override protected void onStop() {
+        super.onStop();
+        if (player != null && player.isPlaying()) {
+            player.pause();
+        }
     }
 
     @Override protected void onDestroy() {

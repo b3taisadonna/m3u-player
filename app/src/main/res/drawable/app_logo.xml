@@ -1,0 +1,28 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="48dp"
+    android:height="48dp"
+    android:viewportWidth="48"
+    android:viewportHeight="48">
+    <!-- Outer TV frame / shield -->
+    <path
+        android:fillColor="#141D29"
+        android:strokeColor="#34D399"
+        android:strokeWidth="2"
+        android:pathData="M8,10 C8,7.8 9.8,6 12,6 L36,6 C38.2,6 40,7.8 40,10 L40,32 C40,34.2 38.2,36 36,36 L28,36 L31,41 L17,41 L20,36 L12,36 C9.8,36 8,34.2 8,32 Z" />
+    <!-- Signal Wave 1 -->
+    <path
+        android:strokeColor="#6EE7B7"
+        android:strokeWidth="1.8"
+        android:strokeLineCap="round"
+        android:pathData="M37,9 C39.5,11.5 39.5,15.5 37,18" />
+    <!-- Signal Wave 2 -->
+    <path
+        android:strokeColor="#34D399"
+        android:strokeWidth="1.8"
+        android:strokeLineCap="round"
+        android:pathData="M41,6 C44.5,9.5 44.5,17.5 41,21" />
+    <!-- Play Triangle Button -->
+    <path
+        android:fillColor="#34D399"
+        android:pathData="M20,15 L32,21.5 L20,28 Z" />
+</vector>

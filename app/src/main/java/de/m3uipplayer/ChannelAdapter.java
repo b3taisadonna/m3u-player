@@ -28,7 +28,7 @@ public class ChannelAdapter extends RecyclerView.Adapter<ChannelAdapter.Holder> 
         h.name.setText(c.name); h.group.setText(c.group);
         h.itemView.setOnClickListener(v -> listener.onClick(c));
     }
-    @Override public long getItemId(int position) { return channels.get(position).url.hashCode(); }
+    @Override public long getItemId(int position) { return position; }
     @Override public int getItemCount() { return channels.size(); }
     static class Holder extends RecyclerView.ViewHolder {
         final TextView number, name, group;
